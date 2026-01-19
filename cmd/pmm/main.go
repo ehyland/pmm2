@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +15,7 @@ import (
 	"github.com/ehyland/pmm2/internal/inspector"
 	"github.com/ehyland/pmm2/internal/installer"
 	"github.com/ehyland/pmm2/internal/registry"
+	"github.com/ehyland/pmm2/internal/shim"
 	"github.com/spf13/cobra"
 )
 
@@ -27,22 +27,23 @@ var (
 
 func main() {
 	exeName := filepath.Base(os.Args[0])
+	conf := config.LoadConfig()
 
 	switch exeName {
 	case "npm", "pnpm", "yarn":
-		if err := executor.RunPackageManager(exeName, exeName, os.Args[1:]); err != nil {
+		if err := executor.RunPackageManager(conf, exeName, exeName, os.Args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 		return
 	case "pnpx":
-		if err := executor.RunPackageManager("pnpm", "pnpx", os.Args[1:]); err != nil {
+		if err := executor.RunPackageManager(conf, "pnpm", "pnpx", os.Args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 		return
 	case "npx":
-		if err := executor.RunPackageManager("npm", "npx", os.Args[1:]); err != nil {
+		if err := executor.RunPackageManager(conf, "npm", "npx", os.Args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -50,8 +51,8 @@ func main() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "pmm",
-		Short: "Package Manager Manager v2",
+		Use:     "pmm",
+		Short:   "Package Manager Manager v2",
 		Version: fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
 	}
 
@@ -67,7 +68,6 @@ func main() {
 				return fmt.Errorf("unable to find package.json with \"packageManager\" field")
 			}
 
-			conf := config.LoadConfig()
 			latest, err := registry.GetLatestVersion(conf, search.Spec.Name)
 			if err != nil {
 				return err
@@ -83,7 +83,7 @@ func main() {
 			}
 
 			fmt.Printf("Updating %s to %s@%s\n", search.PackageJSONPath, latest.Name, latest.Version)
-			return updateSpecInPackageJson(search.PackageJSONPath, *latest)
+			return inspector.UpdateSpecInPackageJSON(search.PackageJSONPath, *latest)
 		},
 	}
 
@@ -92,7 +92,6 @@ func main() {
 		Short: "Update the default package manager version",
 		Args:  cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := config.LoadConfig()
 			name := "all"
 			if len(args) > 0 {
 				name = args[0]
@@ -100,7 +99,7 @@ func main() {
 
 			var toUpdate []inspector.PackageManagerSpec
 			if name == "all" {
-				for _, pm := range config.SupportedPackageManagers {
+				for _, pm := range config.GetSupportedPackageManagers() {
 					latest, err := registry.GetLatestVersion(conf, pm)
 					if err != nil {
 						return err
@@ -164,13 +163,12 @@ func main() {
 				return fmt.Errorf("package.json not found at %s", pkgJSONPath)
 			}
 
-			conf := config.LoadConfig()
 			latest, err := registry.GetLatestVersion(conf, name)
 			if err != nil {
 				return err
 			}
 
-			return updateSpecInPackageJson(pkgJSONPath, *latest)
+			return inspector.UpdateSpecInPackageJSON(pkgJSONPath, *latest)
 		},
 	}
 
@@ -178,7 +176,7 @@ func main() {
 		Use:   "setup",
 		Short: "Ensure all shims (npm, pnpm, yarn, etc.) are correctly linked",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return ensureShims()
+			return shim.EnsureShims()
 		},
 	}
 
@@ -187,28 +185,6 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func ensureShims() error {
-	exePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	binDir := filepath.Dir(exePath)
-	exeName := filepath.Base(exePath)
-
-	for _, shim := range config.Shims {
-		shimPath := filepath.Join(binDir, shim)
-		// Remove if exists
-		if _, err := os.Lstat(shimPath); err == nil {
-			os.Remove(shimPath)
-		}
-		fmt.Printf("Creating shim: %s -> %s\n", shim, exeName)
-		if err := os.Symlink(exeName, shimPath); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to create shim %s: %v\n", shim, err)
-		}
-	}
-	return nil
 }
 
 func runUpdateSelf() error {
@@ -244,25 +220,4 @@ func runUpdateSelf() error {
 		return err
 	}
 	return syscall.Exec(exePath, []string{filepath.Base(exePath), "setup"}, os.Environ())
-}
-
-func updateSpecInPackageJson(path string, spec inspector.PackageManagerSpec) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	var pkg map[string]interface{}
-	if err := json.Unmarshal(data, &pkg); err != nil {
-		return err
-	}
-
-	pkg["packageManager"] = fmt.Sprintf("%s@%s", spec.Name, spec.Version)
-
-	newData, err := json.MarshalIndent(pkg, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(path, newData, 0644)
 }

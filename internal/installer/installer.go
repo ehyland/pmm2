@@ -39,20 +39,20 @@ func Install(conf *config.Config, spec inspector.PackageManagerSpec) error {
 
 	body, err := registry.DownloadTarball(conf, spec)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to download: %w", err)
 	}
 	defer body.Close()
 
 	installPath := GetInstallPath(conf, spec)
 	if err := os.RemoveAll(installPath); err != nil {
-		return err
+		return fmt.Errorf("failed to clean install path: %w", err)
 	}
 	if err := os.MkdirAll(installPath, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create install path: %w", err)
 	}
 
 	if err := extractTarGz(body, installPath); err != nil {
-		return err
+		return fmt.Errorf("failed to extract: %w", err)
 	}
 
 	return nil
@@ -113,12 +113,12 @@ func GetExecutablePath(conf *config.Config, spec inspector.PackageManagerSpec, e
 
 	data, err := os.ReadFile(pkgJSONPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read package.json: %w", err)
 	}
 
 	var pkg PackageJSON
 	if err := json.Unmarshal(data, &pkg); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse package.json: %w", err)
 	}
 
 	relPath, ok := pkg.Bin[executableName]

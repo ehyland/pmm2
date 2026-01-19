@@ -46,14 +46,17 @@ func ParseSpecString(specString string) (PackageManagerSpec, error) {
 func FindPackageManagerSpec() (*FoundSpec, error) {
 	current, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
 
 	for {
 		pkgJSONPath := filepath.Join(current, "package.json")
 		if _, err := os.Stat(pkgJSONPath); err == nil {
 			spec, err := loadSpecFromPkgJSON(pkgJSONPath)
-			if err == nil && spec != nil {
+			if err != nil {
+				return nil, fmt.Errorf("failed to load spec from %s: %w", pkgJSONPath, err)
+			}
+			if spec != nil {
 				return &FoundSpec{
 					PackageJSONPath: pkgJSONPath,
 					Spec:            *spec,
@@ -92,4 +95,25 @@ func loadSpecFromPkgJSON(path string) (*PackageManagerSpec, error) {
 	}
 
 	return &spec, nil
+}
+
+func UpdateSpecInPackageJSON(path string, spec PackageManagerSpec) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var pkg map[string]interface{}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return err
+	}
+
+	pkg["packageManager"] = fmt.Sprintf("%s@%s", spec.Name, spec.Version)
+
+	newData, err := json.MarshalIndent(pkg, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, newData, 0644)
 }

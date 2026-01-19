@@ -13,16 +13,24 @@ import (
 	"github.com/ehyland/pmm2/internal/installer"
 )
 
-func RunPackageManager(packageManagerName string, executableName string, args []string) error {
-	conf := config.LoadConfig()
+type SpecMismatchError struct {
+	Expected string
+	Path     string
+}
 
+func (e *SpecMismatchError) Error() string {
+	relPath, _ := filepath.Rel(".", e.Path)
+	return fmt.Sprintf("⚠️  This project is configured to use %s.\nSee \"packageManager\" field in ./%s", e.Expected, relPath)
+}
+
+func RunPackageManager(conf *config.Config, packageManagerName string, executableName string, args []string) error {
 	if !config.IsSupported(packageManagerName) {
 		return fmt.Errorf("unsupported package manager: %s", packageManagerName)
 	}
 
 	found, err := inspector.FindPackageManagerSpec()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find package manager spec: %w", err)
 	}
 
 	var spec *inspector.PackageManagerSpec
@@ -31,10 +39,10 @@ func RunPackageManager(packageManagerName string, executableName string, args []
 			if conf.IgnoreSpecMismatch {
 				spec = nil
 			} else {
-				relPath, _ := filepath.Rel(".", found.PackageJSONPath)
-				fmt.Fprintf(os.Stderr, "⚠️  This project is configured to use %s.\n", found.Spec.Name)
-				fmt.Fprintf(os.Stderr, "See \"packageManager\" field in ./%s\n", relPath)
-				os.Exit(1)
+				return &SpecMismatchError{
+					Expected: found.Spec.Name,
+					Path:     found.PackageJSONPath,
+				}
 			}
 		} else {
 			spec = &found.Spec
@@ -44,7 +52,7 @@ func RunPackageManager(packageManagerName string, executableName string, args []
 	if spec == nil {
 		version, err := defaults.GetDefaultVersion(conf, packageManagerName)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get default version: %w", err)
 		}
 		spec = &inspector.PackageManagerSpec{
 			Name:    packageManagerName,
@@ -53,12 +61,12 @@ func RunPackageManager(packageManagerName string, executableName string, args []
 	}
 
 	if err := installer.Install(conf, *spec); err != nil {
-		return err
+		return fmt.Errorf("failed to install: %w", err)
 	}
 
 	exePath, err := installer.GetExecutablePath(conf, *spec, executableName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get executable path: %w", err)
 	}
 
 	nodePath, err := exec.LookPath("node")

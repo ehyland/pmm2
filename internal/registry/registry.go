@@ -18,17 +18,17 @@ func GetLatestVersion(conf *config.Config, name string) (*inspector.PackageManag
 	url := fmt.Sprintf("%s/%s", conf.Registry, name)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch packument: %s", resp.Status)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var packument Packument
 	if err := json.NewDecoder(resp.Body).Decode(&packument); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	version, ok := packument.DistTags["latest"]
@@ -46,12 +46,12 @@ func DownloadTarball(conf *config.Config, spec inspector.PackageManagerSpec) (io
 	url := fmt.Sprintf("%s/%s/-/%s-%s.tgz", conf.Registry, spec.Name, spec.Name, spec.Version)
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http request failed: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("failed to download tarball: %s", resp.Status)
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	return resp.Body, nil
