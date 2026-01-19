@@ -1,50 +1,47 @@
-# 📦 PMM - _NodeJS_ Package Manager Manager
+# pmm (Package Manager Manager) v2
 
-Just like corepack, plus
+A high-performance, dependency-free version of `pmm` written in Go.
 
-🔥 &nbsp; Better [fnm](https://github.com/Schniz/fnm/issues/566) support.
+## Features
 
-🔥 &nbsp; `pmm update-local` update `packageManager` for your local project
+- **Zero Overhead**: Proxies calls to `npm`, `pnpm`, and `yarn` using `syscall.Exec`.
+- **Automatic Multi-version Management**: Reads `packageManager` from `package.json` and installs the correct version automatically.
+- **Project Pinning**: easily pin a project to a specific package manager version with `pmm pin`.
+- **Native Updates**: Self-updates itself directly from GitHub Releases.
+- **Cross-platform**: Works on macOS and Linux (AMD64/ARM64).
 
-🔥 &nbsp; `pmm update-default <package-manager> [version]` update the global fallback version
+## Installation
 
-🔥 &nbsp; `pmm pin <package-manager> <path>` add `packageManager` field to your package
+### Shell Script (recommended)
 
-🔥 &nbsp; Installs package managers from your configured npm registry (or set `PMM_NPM_REGISTRY` to use an alternative)
-
-> ⏲️ &nbsp; No Windows support at this point (happy to accept a pull request)
-
-## Install
-
-```shell
-curl -o- https://raw.githubusercontent.com/ehyland/pmm/main/install.sh | bash
+```bash
+curl -fsSL https://raw.githubusercontent.com/ehyland/pmm2/main/install.sh | bash
 ```
 
-## Usage
+After running the script, add the binary directory to your `PATH` in your `.bashrc` or `.zshrc`:
 
-Add `packageManager` field to your projects `package.json`.
-
-e.g.
-
-```json
-{
-  "packageManager": "pnpm@7.5.0"
-}
+```bash
+export PATH="$HOME/.pmm2/bin:$PATH"
 ```
 
-Then use your package manager as you usually would. Behind the scenes, `pmm` will automatically install and run the package manager version in your `package.json`.
+### Homebrew (macOS)
 
-The first time you run `npm` or `pnpm` outside of a configured project / in a global context, pmm will get the latest version of your package manager and set it as the global default. The default can then be updated with `pmm update-default <package-manager> [version]`.
-
-## Uninstall
-
-Simply remove the `~/.pmm` dir and the enabling script in your `~/.bashrc`
-
-```shell
-export PMM_DIR="$HOME/.pmm"
-[ -s "$PMM_DIR/package/enable.sh" ] && \. "$PMM_DIR/package/enable.sh"  # This loads pmm shims
+```bash
+brew tap ehyland/tap
+brew install pmm
 ```
 
-## Contributing to `pmm`
+## Binary Distribution
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md)
+`pmm` is distributed as a single multi-call binary. When run as `npm`, `pnpm`, or `yarn` (via symlinks), it behaves as a proxy. When run as `pmm`, it provides management commands.
+
+### Commands
+
+- `pmm update-local`: Updates the `packageManager` in the current project to the latest version.
+- `pmm update-default [pm]`: Updates the global default version for a package manager.
+- `pmm update-self`: Updates `pmm` itself.
+- `pmm pin <pm> <path>`: Pins the project at `<path>` to the latest version of `<pm>`.
+
+## License
+
+MIT

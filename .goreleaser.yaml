@@ -1,0 +1,60 @@
+# .goreleaser.yaml
+version: 2
+project_name: pmm
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./cmd/pmm
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - format: tar.gz
+    # this name template makes the result look like pmm_Linux_x86_64.tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  - name: pmm
+    repository:
+      owner: ehyland
+      name: homebrew-tap
+    directory: Formula
+    homepage: "https://github.com/ehyland/pmm2"
+    description: "Package Manager Manager v2"
+    test: |
+      system "#{bin}/pmm --version"
+    install: |
+      bin.install "pmm"
+      bin.install_symlink bin/"pmm" => "npm"
+      bin.install_symlink bin/"pmm" => "npx"
+      bin.install_symlink bin/"pmm" => "pnpm"
+      bin.install_symlink bin/"pmm" => "pnpx"
+      bin.install_symlink bin/"pmm" => "yarn"

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/ehyland/pmm2/internal/config"
@@ -173,11 +174,41 @@ func main() {
 		},
 	}
 
-	rootCmd.AddCommand(updateLocalCmd, updateDefaultCmd, updateSelfCmd, pinCmd)
+	setupCmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Ensure all shims (npm, pnpm, yarn, etc.) are correctly linked",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return ensureShims()
+		},
+	}
+
+	rootCmd.AddCommand(updateLocalCmd, updateDefaultCmd, updateSelfCmd, pinCmd, setupCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func ensureShims() error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	binDir := filepath.Dir(exePath)
+	exeName := filepath.Base(exePath)
+
+	for _, shim := range config.Shims {
+		shimPath := filepath.Join(binDir, shim)
+		// Remove if exists
+		if _, err := os.Lstat(shimPath); err == nil {
+			os.Remove(shimPath)
+		}
+		fmt.Printf("Creating shim: %s -> %s\n", shim, exeName)
+		if err := os.Symlink(exeName, shimPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to create shim %s: %v\n", shim, err)
+		}
+	}
+	return nil
 }
 
 func runUpdateSelf() error {
@@ -200,7 +231,19 @@ func runUpdateSelf() error {
 	}
 
 	fmt.Printf("Updating to %s...\n", latest.Version())
-	return updater.UpdateTo(context.Background(), latest, os.Args[0])
+	if err := updater.UpdateTo(context.Background(), latest, os.Args[0]); err != nil {
+		return err
+	}
+
+	fmt.Println("Self-update successful. Synchronizing shims...")
+
+	// Use syscall.Exec to run the NEW binary with the 'setup' command
+	// This ensures the new config.Shims list from the updated binary is used.
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(exePath, []string{filepath.Base(exePath), "setup"}, os.Environ())
 }
 
 func updateSpecInPackageJson(path string, spec inspector.PackageManagerSpec) error {
