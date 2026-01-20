@@ -2,12 +2,15 @@ package installer
 
 import (
 	"archive/tar"
+	"archive/zip"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/ehyland/pmm2/internal/config"
@@ -25,7 +28,13 @@ func GetInstallPath(conf *config.Config, spec inspector.PackageManagerSpec) stri
 }
 
 func IsInstalled(conf *config.Config, spec inspector.PackageManagerSpec) bool {
-	path := filepath.Join(GetInstallPath(conf, spec), "package.json")
+	installPath := GetInstallPath(conf, spec)
+	var path string
+	if spec.Name == "bun" {
+		path = filepath.Join(installPath, "bun")
+	} else {
+		path = filepath.Join(installPath, "package.json")
+	}
 	_, err := os.Stat(path)
 	return err == nil
 }
@@ -36,6 +45,10 @@ func Install(conf *config.Config, spec inspector.PackageManagerSpec) error {
 	}
 
 	fmt.Printf("Installing %s@%s...\n", spec.Name, spec.Version)
+
+	if spec.Name == "bun" {
+		return installBun(conf, spec)
+	}
 
 	body, err := registry.DownloadTarball(conf, spec)
 	if err != nil {
@@ -109,6 +122,11 @@ func extractTarGz(gzipStream io.Reader, dest string) error {
 
 func GetExecutablePath(conf *config.Config, spec inspector.PackageManagerSpec, executableName string) (string, error) {
 	installPath := GetInstallPath(conf, spec)
+
+	if spec.Name == "bun" {
+		return filepath.Join(installPath, "bun"), nil
+	}
+
 	pkgJSONPath := filepath.Join(installPath, "package.json")
 
 	data, err := os.ReadFile(pkgJSONPath)
@@ -129,4 +147,85 @@ func GetExecutablePath(conf *config.Config, spec inspector.PackageManagerSpec, e
 	}
 
 	return filepath.Join(installPath, relPath), nil
+}
+
+func installBun(conf *config.Config, spec inspector.PackageManagerSpec) error {
+	body, err := registry.DownloadBunZip(conf, spec, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return fmt.Errorf("failed to download: %w", err)
+	}
+	defer body.Close()
+
+	installPath := GetInstallPath(conf, spec)
+	if err := os.RemoveAll(installPath); err != nil {
+		return fmt.Errorf("failed to clean install path: %w", err)
+	}
+	if err := os.MkdirAll(installPath, 0755); err != nil {
+		return fmt.Errorf("failed to create install path: %w", err)
+	}
+
+	// Zip requires ReaderAt, so we must read all to memory
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return fmt.Errorf("failed to read body: %w", err)
+	}
+
+	if err := extractZip(bytes.NewReader(data), int64(len(data)), installPath); err != nil {
+		return fmt.Errorf("failed to extract: %w", err)
+	}
+
+	// Make sure it is executable
+	if err := os.Chmod(filepath.Join(installPath, "bun"), 0755); err != nil {
+		return fmt.Errorf("failed to chmod: %w", err)
+	}
+
+	return nil
+}
+
+func extractZip(idx *bytes.Reader, size int64, dest string) error {
+	r, err := zip.NewReader(idx, size)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range r.File {
+		// Strip top level folder
+		parts := strings.Split(f.Name, "/")
+		if len(parts) <= 1 {
+			continue
+		}
+		relPath := filepath.Join(parts[1:]...)
+		target := filepath.Join(dest, relPath)
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(target, 0755)
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+
+		dstFile, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+
+		fileInArchive, err := f.Open()
+		if err != nil {
+			dstFile.Close()
+			return err
+		}
+
+		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
+			fileInArchive.Close()
+			dstFile.Close()
+			return err
+		}
+
+		fileInArchive.Close()
+		dstFile.Close()
+	}
+
+	return nil
 }

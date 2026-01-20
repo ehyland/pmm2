@@ -30,7 +30,7 @@ func main() {
 	conf := config.LoadConfig()
 
 	switch exeName {
-	case "npm", "pnpm", "yarn":
+	case "npm", "pnpm", "yarn", "bun":
 		if err := executor.RunPackageManager(conf, exeName, exeName, os.Args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
@@ -44,6 +44,12 @@ func main() {
 		return
 	case "npx":
 		if err := executor.RunPackageManager(conf, "npm", "npx", os.Args[1:]); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	case "bunx":
+		if err := executor.RunPackageManager(conf, "bun", "bunx", os.Args[1:]); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}

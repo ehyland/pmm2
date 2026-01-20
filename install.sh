@@ -50,9 +50,7 @@ echo "Creating symlinks..."
 
 echo "pmm successfully installed to $INSTALL_DIR"
 
-# Try to run it with full path for verification
-"$INSTALL_DIR/pmm" --version
-
+echo ""
 echo ""
 echo "Please add the following to your .bashrc (or .zshrc):"
 echo ""

@@ -69,14 +69,18 @@ func RunPackageManager(conf *config.Config, packageManagerName string, executabl
 		return fmt.Errorf("failed to get executable path: %w", err)
 	}
 
+	cmdArgs := append([]string{exePath}, args...)
+	env := os.Environ()
+	env = append(env, "PMM_IGNORE_SPEC_MISS_MATCH=1")
+
+	if packageManagerName == "bun" {
+		return syscall.Exec(exePath, append([]string{executableName}, args...), env)
+	}
+
 	nodePath, err := exec.LookPath("node")
 	if err != nil {
 		return fmt.Errorf("node not found in PATH: %w", err)
 	}
-
-	cmdArgs := append([]string{exePath}, args...)
-	env := os.Environ()
-	env = append(env, "PMM_IGNORE_SPEC_MISS_MATCH=1")
 
 	return syscall.Exec(nodePath, append([]string{"node"}, cmdArgs...), env)
 }

@@ -56,3 +56,24 @@ func DownloadTarball(conf *config.Config, spec inspector.PackageManagerSpec) (io
 
 	return resp.Body, nil
 }
+
+func DownloadBunZip(conf *config.Config, spec inspector.PackageManagerSpec, osName, arch string) (io.ReadCloser, error) {
+	if arch == "amd64" {
+		arch = "x64"
+	} else if arch == "arm64" {
+		arch = "aarch64"
+	}
+
+	url := fmt.Sprintf("https://github.com/oven-sh/bun/releases/download/bun-v%s/bun-%s-%s.zip", spec.Version, osName, arch)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("http request failed: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return resp.Body, nil
+}

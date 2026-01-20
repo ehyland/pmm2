@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-var supportedPackageManagers = []string{"pnpm", "npm", "yarn"}
-var shims = []string{"npm", "npx", "pnpm", "pnpx", "yarn"}
+var supportedPackageManagers = []string{"pnpm", "npm", "yarn", "bun"}
+var shims = []string{"npm", "npx", "pnpm", "pnpx", "yarn", "bun", "bunx"}
 
 type Config struct {
 	Registry           string
