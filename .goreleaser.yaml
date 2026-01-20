@@ -46,5 +46,6 @@ homebrew_casks:
     repository:
       owner: ehyland
       name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/ehyland/pmm2"
     description: "Package Manager Manager v2"
