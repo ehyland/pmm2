@@ -20,7 +20,7 @@ builds:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     # this name template makes the result look like pmm_Linux_x86_64.tar.gz
     name_template: >-
       {{ .ProjectName }}_
@@ -32,29 +32,19 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
+      - "^docs:"
+      - "^test:"
 
-brews:
+homebrew_casks:
   - name: pmm
     repository:
       owner: ehyland
       name: homebrew-tap
-    directory: Formula
     homepage: "https://github.com/ehyland/pmm2"
     description: "Package Manager Manager v2"
-    test: |
-      system "#{bin}/pmm --version"
-    install: |
-      bin.install "pmm"
-      bin.install_symlink bin/"pmm" => "npm"
-      bin.install_symlink bin/"pmm" => "npx"
-      bin.install_symlink bin/"pmm" => "pnpm"
-      bin.install_symlink bin/"pmm" => "pnpx"
-      bin.install_symlink bin/"pmm" => "yarn"
