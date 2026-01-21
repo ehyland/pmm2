@@ -17,7 +17,7 @@ func TestParseSpecString(t *testing.T) {
 		{"yarn@1.22.19", PackageManagerSpec{"yarn", "1.22.19"}, false},
 		{"invalid", PackageManagerSpec{}, true},
 		{"pnpm@latest", PackageManagerSpec{"pnpm", "latest"}, false},
-		{"bun@1.0.0", PackageManagerSpec{}, true},
+		{"bun@1.0.0", PackageManagerSpec{"bun", "1.0.0"}, false},
 	}
 
 	for _, tt := range tests {

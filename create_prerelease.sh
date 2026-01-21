@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+echo "Running tests..."
+go test ./...
+echo "Tests passed!"
+
 # Fetch tags to ensure we have the latest list
 git fetch --tags >/dev/null 2>&1
 

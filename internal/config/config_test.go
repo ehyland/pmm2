@@ -56,7 +56,7 @@ func TestIsSupported(t *testing.T) {
 		{"npm", true},
 		{"pnpm", true},
 		{"yarn", true},
-		{"bun", false},
+		{"bun", true},
 	}
 
 	for _, tt := range tests {
