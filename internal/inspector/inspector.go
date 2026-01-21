@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ehyland/pmm2/internal/config"
+	"github.com/tidwall/sjson"
 )
 
 type PackageManagerSpec struct {
@@ -103,17 +104,14 @@ func UpdateSpecInPackageJSON(path string, spec PackageManagerSpec) error {
 		return err
 	}
 
-	var pkg map[string]interface{}
-	if err := json.Unmarshal(data, &pkg); err != nil {
-		return err
-	}
+	jsonStr := string(data)
+	value := fmt.Sprintf("%s@%s", spec.Name, spec.Version)
 
-	pkg["packageManager"] = fmt.Sprintf("%s@%s", spec.Name, spec.Version)
-
-	newData, err := json.MarshalIndent(pkg, "", "  ")
+	// sjson.Set preserves formatting and order
+	newJSON, err := sjson.Set(jsonStr, "packageManager", value)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(path, newData, 0644)
+	return os.WriteFile(path, []byte(newJSON), 0644)
 }
