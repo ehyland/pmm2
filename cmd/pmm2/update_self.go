@@ -41,7 +41,11 @@ func runUpdateSelf(version string) error {
 	}
 
 	fmt.Printf("Updating to %s...\n", latest.Version())
-	if err := updater.UpdateTo(context.Background(), latest, os.Args[0]); err != nil {
+	exePath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	if err := updater.UpdateTo(context.Background(), latest, exePath); err != nil {
 		return err
 	}
 
@@ -49,9 +53,5 @@ func runUpdateSelf(version string) error {
 
 	// Use syscall.Exec to run the NEW binary with the 'setup' command
 	// This ensures the new config.Shims list from the updated binary is used.
-	exePath, err := os.Executable()
-	if err != nil {
-		return err
-	}
 	return syscall.Exec(exePath, []string{filepath.Base(exePath), "setup"}, os.Environ())
 }
