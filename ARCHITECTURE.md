@@ -16,12 +16,16 @@
 ## Core Components
 
 ### 1. Multi-call Binary Logic
+
 The binary behaves differently based on `os.Args[0]` (the name used to invoke it).
+
 - **Management Mode**: If invoked as `pmm`, it provides CLI commands (`pin`, `update-self`, etc.).
 - **Shim Mode**: If invoked as `npm`, `npx`, `pnpm`, `pnpx`, or `yarn`, it enters the proxying logic.
 
 ### 2. Execution Flow (Shim Mode)
+
 When a shim is called, `pmm2` follows these steps:
+
 1.  **Discovery**: Climbs the directory tree to find the nearest `package.json`.
 2.  **Inspection**: Parses the `packageManager` field (e.g., `pnpm@8.6.0`).
 3.  **Resolution**:
@@ -34,6 +38,7 @@ When a shim is called, `pmm2` follows these steps:
 5.  **Process Replacement**: Uses `syscall.Exec` to replace the `pmm2` process with the target package manager process (usually `node path/to/pm/bin/pm.js`). This ensures that signals, exit codes, and process ownership are handled natively by the OS with zero overhead.
 
 ### 3. Registry & Installer
+
 - **Registry**: Interfaces with the npm registry API to fetch version metadata. Supports custom registries via `PMM_NPM_REGISTRY`.
 - **Installer**: Handles idempotent installations. It downloads tarballs, verifies contents, and ensures the target directory is atomic (using temporary directories during extraction).
 
@@ -72,22 +77,23 @@ pmm2/
 
 ## Environment Variables
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `PMM_DEBUG` | Enables verbose logging to stderr. | `false` |
-| `PMM_NPM_REGISTRY` | Custom npm registry URL. | `https://registry.npmjs.org` |
-| `PMM_DIR` | Root directory for storage. | `~/.pmm2` |
+| Variable           | Description                        | Default                      |
+| :----------------- | :--------------------------------- | :--------------------------- |
+| `PMM_DEBUG`        | Enables verbose logging to stderr. | `false`                      |
+| `PMM_NPM_REGISTRY` | Custom npm registry URL.           | `https://registry.npmjs.org` |
+| `PMM2_DIR`         | Root directory for storage.        | `~/.pmm2`                    |
 
 ---
 
 ## Self-Update Mechanism
 
 When `pmm update-self` is run:
+
 1.  The `go-selfupdate` library queries the GitHub Releases API for `ehyland/pmm2`.
 2.  It compares the latest tag with the hardcoded `version` (set during build via `ldflags`).
 3.  If an update is available, it downloads the compressed binary for the current `GOOS` and `GOARCH`.
 4.  It replaces the current executable on disk with the new version.
-5.  **Atomic Re-execution**: The running process uses `syscall.Exec` to replace itself with the newly downloaded binary, automatically invoking the `setup` command. This ensures the configuration and shim definitions from the *new* version are used to synchronize symlinks.
+5.  **Atomic Re-execution**: The running process uses `syscall.Exec` to replace itself with the newly downloaded binary, automatically invoking the `setup` command. This ensures the configuration and shim definitions from the _new_ version are used to synchronize symlinks.
 
 A manual synchronization can be triggered using `pmm setup`.
 

@@ -2,8 +2,8 @@
 set -e
 
 REPO="ehyland/pmm2"
-PMM_DIR="$HOME/.pmm2"
-INSTALL_DIR="$PMM_DIR/bin"
+PMM2_DIR="$HOME/.pmm2"
+INSTALL_DIR="$PMM2_DIR/bin"
 
 # Create install directory
 mkdir -p "$INSTALL_DIR"
@@ -52,11 +52,7 @@ echo "pmm2 successfully installed to $INSTALL_DIR"
 
 echo ""
 echo ""
-echo "Please add the following to your .bashrc (or .zshrc):"
-echo ""
-echo "  export PATH=\"\$HOME/.pmm2/bin:\$PATH\""
-echo ""
-echo "After adding, restart your terminal or run: source ~/.bashrc"
+echo "Restart your terminal or run: source ~/.bashrc"
 echo ""
 
 

@@ -29,7 +29,7 @@ func LoadConfig() *Config {
 		registry = "https://registry.npmjs.org"
 	}
 
-	pmmDir := os.Getenv("PMM_DIR")
+	pmmDir := os.Getenv("PMM2_DIR")
 	if pmmDir == "" {
 		home, _ := os.UserHomeDir()
 		pmmDir = filepath.Join(home, ".pmm2")

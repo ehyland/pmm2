@@ -18,7 +18,7 @@ A high-performance, dependency-free version of `pmm` written in Go.
 curl -fsSL https://raw.githubusercontent.com/ehyland/pmm2/main/install.sh | bash
 ```
 
-After running the script, add the binary directory to your `PATH` in your `.bashrc` or `.zshrc`:
+The install script will add the binary directory to your `PATH` in your `.bashrc`:
 
 ```bash
 export PATH="$HOME/.pmm2/bin:$PATH"

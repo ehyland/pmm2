@@ -8,7 +8,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	os.Setenv("PMM_NPM_REGISTRY", "https://test.registry.org")
-	os.Setenv("PMM_DIR", "/tmp/.pmm-test")
+	os.Setenv("PMM2_DIR", "/tmp/.pmm-test")
 	os.Setenv("PMM_IGNORE_SPEC_MISS_MATCH", "true")
 
 	conf := LoadConfig()
@@ -28,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestLoadConfig_Defaults(t *testing.T) {
 	os.Unsetenv("PMM_NPM_REGISTRY")
-	os.Unsetenv("PMM_DIR")
+	os.Unsetenv("PMM2_DIR")
 	os.Unsetenv("PMM_IGNORE_SPEC_MISS_MATCH")
 
 	conf := LoadConfig()

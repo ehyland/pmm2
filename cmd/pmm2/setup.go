@@ -43,7 +43,7 @@ func ensurePathInBashrc(homeDir, binDir string) error {
 	defer f.Close()
 
 	// Prepend a newline just in case the file doesn't end with one
-	lineToAdd := fmt.Sprintf("\n# pmm2\nexport PATH=\"%s:$PATH\"\n", binDir)
+	lineToAdd := fmt.Sprintf("\n\n# pmm2\nexport PATH=\"%s:$PATH\"\n", binDir)
 	if _, err := f.WriteString(lineToAdd); err != nil {
 		return err
 	}
