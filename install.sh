@@ -32,7 +32,7 @@ if [ -z "$LATEST_RELEASE" ]; then
     exit 1
 fi
 
-FILENAME="pmm_${OS}_${ARCH}.tar.gz"
+FILENAME="pmm2_${OS}_${ARCH}.tar.gz"
 URL="https://github.com/${REPO}/releases/download/${LATEST_RELEASE}/${FILENAME}"
 
 echo "Downloading $URL..."
@@ -42,13 +42,13 @@ curl -L "$URL" -o "${TMP_DIR}/${FILENAME}"
 echo "Installing to $INSTALL_DIR..."
 tar -xzf "${TMP_DIR}/${FILENAME}" -C "${TMP_DIR}"
 
-mv "${TMP_DIR}/pmm" "$INSTALL_DIR/pmm"
-chmod +x "$INSTALL_DIR/pmm"
+mv "${TMP_DIR}/pmm2" "$INSTALL_DIR/pmm2"
+chmod +x "$INSTALL_DIR/pmm2"
 
 echo "Creating symlinks..."
-"$INSTALL_DIR/pmm" setup
+"$INSTALL_DIR/pmm2" setup
 
-echo "pmm successfully installed to $INSTALL_DIR"
+echo "pmm2 successfully installed to $INSTALL_DIR"
 
 echo ""
 echo ""

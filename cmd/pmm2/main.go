@@ -57,7 +57,7 @@ func main() {
 	}
 
 	rootCmd := &cobra.Command{
-		Use:     "pmm",
+		Use:     "pmm2",
 		Short:   "Package Manager Manager v2",
 		Version: fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
 	}
@@ -137,7 +137,7 @@ func main() {
 
 	updateSelfCmd := &cobra.Command{
 		Use:   "update-self",
-		Short: "Update pmm itself",
+		Short: "Update pmm2 itself",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runUpdateSelf()
 		},
@@ -208,7 +208,7 @@ func runUpdateSelf() error {
 	}
 
 	if latest.LessOrEqual(version) {
-		fmt.Printf("pmm %s is already up to date\n", version)
+		fmt.Printf("pmm2 %s is already up to date\n", version)
 		return nil
 	}
 
