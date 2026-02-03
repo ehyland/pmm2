@@ -20,7 +20,7 @@ type SpecMismatchError struct {
 
 func (e *SpecMismatchError) Error() string {
 	relPath, _ := filepath.Rel(".", e.Path)
-	return fmt.Sprintf("⚠️  This project is configured to use %s.\nSee \"packageManager\" field in ./%s", e.Expected, relPath)
+	return fmt.Sprintf("⚠️  This project is configured to use %s.\nSee \"packageManager\" field in ./%s\n\nYou can ignore this error by setting the environment variable PMM_IGNORE_SPEC_MISS_MATCH=1", e.Expected, relPath)
 }
 
 func RunPackageManager(conf *config.Config, packageManagerName string, executableName string, args []string) error {
@@ -36,7 +36,8 @@ func RunPackageManager(conf *config.Config, packageManagerName string, executabl
 	var spec *inspector.PackageManagerSpec
 	if found != nil {
 		if found.Spec.Name != packageManagerName {
-			if conf.IgnoreSpecMismatch {
+			// TODO: move bun exception to config
+			if packageManagerName == "bun" || conf.IgnoreSpecMismatch {
 				spec = nil
 			} else {
 				return &SpecMismatchError{
