@@ -45,6 +45,9 @@ func runUpdateSelf(version string) error {
 	if err != nil {
 		return err
 	}
+	if absPath, err := filepath.Abs(exePath); err == nil {
+		exePath = absPath
+	}
 	if err := updater.UpdateTo(context.Background(), latest, exePath); err != nil {
 		return err
 	}

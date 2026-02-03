@@ -13,6 +13,9 @@ func EnsureShims() error {
 	if err != nil {
 		return err
 	}
+	if absPath, err := filepath.Abs(exePath); err == nil {
+		exePath = absPath
+	}
 	binDir := filepath.Dir(exePath)
 	exeName := filepath.Base(exePath)
 
