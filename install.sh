@@ -25,10 +25,18 @@ case "$OS" in
 esac
 
 echo "Detecting latest version..."
-LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+RELEASE_JSON=$(curl -fsSL -H "Accept: application/vnd.github+json" -H "User-Agent: pmm2-installer" "https://api.github.com/repos/$REPO/releases/latest")
+
+if ! command -v node >/dev/null 2>&1; then
+    echo "Error: Node.js is required to extract tag_name from https://api.github.com/repos/$REPO/releases/latest"
+    echo "Install Node.js and retry. https://nodejs.org/en/download"
+    exit 1
+fi
+
+LATEST_RELEASE=$(RELEASE_JSON="$RELEASE_JSON" node -e 'try { const release = JSON.parse(process.env.RELEASE_JSON || "{}"); if (release.tag_name) process.stdout.write(release.tag_name); } catch {}' 2>/dev/null || true)
 
 if [ -z "$LATEST_RELEASE" ]; then
-    echo "Error: Could not find latest release for $REPO"
+    echo "Error: Could not extract tag_name from https://api.github.com/repos/$REPO/releases/latest"
     exit 1
 fi
 
