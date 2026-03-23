@@ -26,13 +26,16 @@ type FoundSpec struct {
 }
 
 func ParseSpecString(specString string) (PackageManagerSpec, error) {
-	parts := strings.Split(specString, "@")
+	parts := strings.SplitN(specString, "@", 2)
 	if len(parts) != 2 {
 		return PackageManagerSpec{}, fmt.Errorf("invalid spec format: %s", specString)
 	}
 
 	name := parts[0]
 	version := parts[1]
+	if shaIdx := strings.Index(version, "+sha"); shaIdx != -1 {
+		version = version[:shaIdx]
+	}
 
 	if !config.IsSupported(name) {
 		return PackageManagerSpec{}, fmt.Errorf("unsupported package manager: %s", name)

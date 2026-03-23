@@ -15,6 +15,7 @@ func TestParseSpecString(t *testing.T) {
 		{"pnpm@8.0.0", PackageManagerSpec{"pnpm", "8.0.0"}, false},
 		{"npm@6.14.15", PackageManagerSpec{"npm", "6.14.15"}, false},
 		{"yarn@1.22.19", PackageManagerSpec{"yarn", "1.22.19"}, false},
+		{"yarn@3.2.3+sha224.953c8233f7a92884eee2de69a1b92d1f2ec1655e66d08071ba9a02fa", PackageManagerSpec{"yarn", "3.2.3"}, false},
 		{"invalid", PackageManagerSpec{}, true},
 		{"pnpm@latest", PackageManagerSpec{"pnpm", "latest"}, false},
 		{"bun@1.0.0", PackageManagerSpec{"bun", "1.0.0"}, false},
@@ -56,5 +57,32 @@ func TestFindPackageManagerSpec(t *testing.T) {
 	}
 	if found.Spec.Name != "pnpm" || found.Spec.Version != "8.0.0" {
 		t.Errorf("expected pnpm@8.0.0, got %s@%s", found.Spec.Name, found.Spec.Version)
+	}
+}
+
+func TestFindPackageManagerSpec_WithSHASuffix(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	pkgJSONPath := filepath.Join(tmpDir, "package.json")
+	content := `{"packageManager": "yarn@3.2.3+sha224.953c8233f7a92884eee2de69a1b92d1f2ec1655e66d08071ba9a02fa"}`
+	if err := os.WriteFile(pkgJSONPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldWd, _ := os.Getwd()
+	defer os.Chdir(oldWd)
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := FindPackageManagerSpec()
+	if err != nil {
+		t.Fatalf("FindPackageManagerSpec() error = %v", err)
+	}
+	if found == nil {
+		t.Fatal("expected to find spec, got nil")
+	}
+	if found.Spec.Name != "yarn" || found.Spec.Version != "3.2.3" {
+		t.Errorf("expected yarn@3.2.3, got %s@%s", found.Spec.Name, found.Spec.Version)
 	}
 }
